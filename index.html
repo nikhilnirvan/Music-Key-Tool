@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music Key Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+
+<div id="home" class="grid grid-cols-1 md:grid-cols-2 gap-8 p-10">
+  <div onclick="showPage('scalePage')" class="cursor-pointer bg-gray-800 hover:bg-indigo-600 transition p-10 rounded-2xl shadow-xl text-center">
+    <h2 class="text-2xl font-bold">Key With Scale</h2>
+  </div>
+  <div onclick="showPage('relativePage')" class="cursor-pointer bg-gray-800 hover:bg-pink-600 transition p-10 rounded-2xl shadow-xl text-center">
+    <h2 class="text-2xl font-bold">Relative Key Finder</h2>
+  </div>
+</div>
+
+<div id="scalePage" class="hidden w-full min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+
+    <button onclick="goHome()" class="mb-6 text-indigo-400">← Back</button>
+    <h1 class="text-2xl md:text-3xl mb-6 text-center">Scale Generator</h1>
+
+    <div class="flex flex-col md:flex-row gap-3 mb-6">
+      <select id="scaleKey" class="bg-gray-800 p-3 rounded w-full"></select>
+      <select id="scaleType" class="bg-gray-800 p-3 rounded w-full"></select>
+    </div>
+
+    <button onclick="generateScaleUI()" class="bg-indigo-600 px-4 py-3 rounded w-full mb-4">
+      Generate
+    </button>
+
+    <div id="scaleOutput" class="text-center text-lg md:text-xl"></div>
+<div id="chordsOutput" class="text-center text-lg mt-4"></div>
+
+  </div>
+</div>
+<div id="relativePage" class="hidden w-full min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+
+    <button onclick="goHome()" class="mb-6 text-indigo-400">← Back</button>
+    <h1 class="text-2xl md:text-3xl mb-6 text-center">Relative Key Finder</h1>
+
+    <div class="flex flex-col md:flex-row gap-3 mb-6">
+      <select id="mode" class="bg-gray-800 p-3 rounded w-full">
+        <option value="major">Major</option>
+        <option value="minor">Minor</option>
+      </select>
+
+      <select id="relativeKey" class="bg-gray-800 p-3 rounded w-full"></select>
+    </div>
+
+    <button onclick="findRelativeUI()" class="bg-pink-600 px-4 py-3 rounded w-full mb-4">
+      Find
+    </button>
+
+    <div id="relativeOutput" class="text-center text-lg md:text-xl"></div>
+
+  </div>
+</div>
+
+<script>
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+const SCALE_PATTERNS = {
+  "Major": [2,2,1,2,2,2,1],
+  "Natural Minor": [2,1,2,2,1,2,2],
+  "Harmonic Minor": [2,1,2,2,1,3,1],
+  "Melodic Minor": [2,1,2,2,2,2,1],
+  "Pentatonic Major": [2,2,3,2,3],
+  "Pentatonic Minor": [3,2,2,3,2]
+};
+
+const scaleKey = document.getElementById("scaleKey");
+const scaleType = document.getElementById("scaleType");
+const relativeKey = document.getElementById("relativeKey");
+const majorQualities = ["Major","Minor","Minor","Major","Major","Minor","Dim"];
+const minorQualities = ["Minor","Dim","Major","Minor","Minor","Major","Major"];
+
+const majorRoman = ["I","ii","iii","IV","V","vi","vii°"];
+const minorRoman = ["i","ii°","III","iv","v","VI","VII"];
+NOTES.forEach(n => {
+  scaleKey.innerHTML += `<option>${n}</option>`;
+  relativeKey.innerHTML += `<option>${n}</option>`;
+});
+
+Object.keys(SCALE_PATTERNS).forEach(s => {
+  scaleType.innerHTML += `<option>${s}</option>`;
+});
+
+function generateScale(root, pattern) {
+  let index = NOTES.indexOf(root);
+  const scale = [NOTES[index]];
+  pattern.forEach(step => {
+    index = (index + step) % 12;
+    scale.push(NOTES[index]);
+  });
+  scale.pop();
+  return scale;
+}
+
+function generateScaleUI() {
+  const key = scaleKey.value;
+  const type = scaleType.value;
+  const scale = generateScale(key, SCALE_PATTERNS[type]);
+
+  document.getElementById("scaleOutput").innerText =
+    `${key} ${type}: ${scale.join(" - ")}`;
+
+  generateChords(scale, type);
+}
+
+function findRelativeMinor(majorKey) {
+  const index = NOTES.indexOf(majorKey);
+  return NOTES[(index + 9) % 12];
+}
+
+function findRelativeMajor(minorKey) {
+  const index = NOTES.indexOf(minorKey);
+  return NOTES[(index + 3) % 12];
+}
+
+function findRelativeUI() {
+  const mode = document.getElementById("mode").value;
+  const key = relativeKey.value;
+
+  if(mode === "major") {
+    document.getElementById("relativeOutput").innerText = `Relative Minor: ${findRelativeMinor(key)} Minor`;
+  } else {
+    document.getElementById("relativeOutput").innerText = `Relative Major: ${findRelativeMajor(key)} Major`;
+  }
+}
+
+function showPage(page) {
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("scalePage").classList.add("hidden");
+  document.getElementById("relativePage").classList.add("hidden");
+  document.getElementById(page).classList.remove("hidden");
+}
+
+function goHome() {
+  document.getElementById("scalePage").classList.add("hidden");
+  document.getElementById("relativePage").classList.add("hidden");
+  document.getElementById("home").classList.remove("hidden");
+}
+function generateChords(scale, type) {
+
+  if(type !== "Major" && type !== "Natural Minor"){
+    document.getElementById("chordsOutput").innerHTML =
+      "<span class='text-yellow-400'>Diatonic chords available only for Major and Natural Minor scales</span>";
+    return;
+  }
+
+  let qualities = type === "Major"
+    ? majorQualities
+    : minorQualities;
+
+  let roman = type === "Major"
+    ? majorRoman
+    : minorRoman;
+
+  let result = "<b>Diatonic Chords:</b><br><br>";
+
+  for(let i=0;i<7;i++){
+    result += `${roman[i]} → ${scale[i]} ${qualities[i]}<br>`;
+  }
+
+  document.getElementById("chordsOutput").innerHTML = result;
+}
+</script>
+
+</body>
+</html>
